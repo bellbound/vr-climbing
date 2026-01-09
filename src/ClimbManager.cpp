@@ -273,14 +273,15 @@ void ClimbManager::StartClimb(bool isLeft)
         ClimbExitCorrector::GetSingleton()->ClearSafePosition();
     }
 
-    // Log climb mode entry and play sound
+    // Log climb mode entry
     if (!wasClimbing) {
         spdlog::info("=== CLIMB MODE: ENTER ({} hand) ===", isLeft ? "left" : "right");
-        // Play grip sound when starting to climb
-        AudioManager::GetSingleton()->PlayGripSound(IsPlayerInBeastForm());
     } else {
         spdlog::info("ClimbManager: {} hand grabbed (already climbing)", isLeft ? "Left" : "Right");
     }
+
+    // Play grip sound whenever a hand grabs a surface (both initial grab and subsequent grabs)
+    AudioManager::GetSingleton()->PlayGripSound(IsPlayerInBeastForm());
 
     RE::NiPoint3 handPos = GetHandWorldPosition(isLeft);
 
