@@ -21,6 +21,10 @@ namespace Config {
 [Climbing]
 ; Enable climbing for player (1=enabled, 0=disabled). Beast forms can always climb.
 enabled=1
+; Enable haptic pulse when a hand successfully latches onto a surface (1=enabled, 0=disabled)
+latchHapticsEnabled=1
+; Haptic pulse duration/intensity (SkyrimVR internal units, default 18.0)
+latchHapticDuration=18.0
 ; Minimum speed to trigger launch when releasing grip (units/sec)
 minLaunchSpeed=5.0
 ; Extra multiplier for horizontal (X/Y) movement (1.0 = same as vertical)
@@ -295,6 +299,8 @@ hotReloadEnabled=1
 
         // Climbing settings (basic physics)
         RegisterBool("Climbing", "enabled", options.climbingEnabled);
+        RegisterBool("Climbing", "latchHapticsEnabled", options.latchHapticsEnabled);
+        RegisterFloat("Climbing", "latchHapticDuration", options.latchHapticDuration);
         RegisterFloat("Climbing", "minLaunchSpeed", options.minLaunchSpeed);
         RegisterFloat("Climbing", "horizontalLaunchBoost", options.horizontalLaunchBoost);
         RegisterFloat("Climbing", "velocityHistoryTime", options.velocityHistoryTime);
@@ -360,7 +366,6 @@ hotReloadEnabled=1
         
         RegisterFloat("Launching", "exitCorrectionSpeedThreshold", options.launchExitCorrectionSpeedThreshold);
         // Exit Correction settings
-        RegisterFloat("ExitCorrection", "delayMs", options.exitCorrectionDelayMs);
         RegisterFloat("ExitCorrection", "maxPenetration", options.exitCorrectionMaxPenetration);
         RegisterFloat("ExitCorrection", "secondsPerUnit", options.exitCorrectionSecondsPerUnit);
         RegisterFloat("ExitCorrection", "controlPointScale", options.exitCorrectionControlPointScale);

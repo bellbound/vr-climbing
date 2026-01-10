@@ -262,65 +262,41 @@ bool BallisticController::Update(float deltaTime)
     m_velocity = velocity;
     m_velocity.z += velocityDeltaZ;
 
-    // Check for exit correction when speed drops below threshold OR no clearance ahead
-    // This runs mid-flight when the player slows down or is about to hit something
-    // Uses a delay window to allow hand-swaps without triggering correction
+    // Check for exit correction when speed drops below threshold or falling
     if (m_needsExitCorrection) {
         float currentSpeed = std::sqrt(m_velocity.x * m_velocity.x + m_velocity.y * m_velocity.y + m_velocity.z * m_velocity.z);
-
-        // Check if player is falling (negative Z velocity)
         bool isFalling = m_velocity.z < 0.0f;
 
-        if (currentSpeed < Config::options.launchExitCorrectionSpeedThreshold || isFalling) {
-            // Start pending timer if not already started
-            if (!m_exitCorrectionPending) {
-                m_exitCorrectionPending = true;
-                m_exitCorrectionRequestTime = std::chrono::steady_clock::now();
-                spdlog::info("BallisticController: Exit correction PENDING (delay {:.0f}ms), speed: {:.1f}, falling: {}",
-                             Config::options.exitCorrectionDelayMs, currentSpeed, isFalling);
-            }
+        bool shouldCorrect = (currentSpeed < Config::options.launchExitCorrectionSpeedThreshold) || isFalling;
 
-            // Check if delay has elapsed
-            auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
-                std::chrono::steady_clock::now() - m_exitCorrectionRequestTime
-            ).count();
+        // Also force correction if penetration is too deep
+        if (!shouldCorrect && Config::options.exitCorrectionMaxPenetration > 0.0f) {
+            auto* hmd = VRNodes::GetHMD();
+            if (hmd) {
+                RE::NiPoint3 hmdPos = hmd->world.translate;
+                RE::NiPoint3 downDir = {0.0f, 0.0f, -1.0f};
+                constexpr float RAY_DISTANCE = 200.0f;
 
-            // Check ground penetration - if too deep, force immediate correction
-            bool forceImmediate = false;
-            if (Config::options.exitCorrectionMaxPenetration > 0.0f) {
-                auto* hmd = VRNodes::GetHMD();
-                if (hmd) {
-                    RE::NiPoint3 hmdPos = hmd->world.translate;
-                    RE::NiPoint3 downDir = {0.0f, 0.0f, -1.0f};
-                    constexpr float RAY_DISTANCE = 200.0f;
+                RaycastResult groundCheck = Raycast::CastRay(hmdPos, downDir, RAY_DISTANCE);
+                if (groundCheck.hit) {
+                    constexpr float HMD_TO_FEET = 120.0f;
+                    float feetZ = hmdPos.z - HMD_TO_FEET;
+                    float groundZ = groundCheck.hitPoint.z;
+                    float penetration = groundZ - feetZ;
 
-                    RaycastResult groundCheck = Raycast::CastRay(hmdPos, downDir, RAY_DISTANCE);
-                    if (groundCheck.hit) {
-                        // Player feet are roughly 120 units below HMD
-                        constexpr float HMD_TO_FEET = 120.0f;
-                        float feetZ = hmdPos.z - HMD_TO_FEET;
-                        float groundZ = groundCheck.hitPoint.z;
-                        float penetration = groundZ - feetZ;  // Positive = feet below ground
-
-                        if (penetration > Config::options.exitCorrectionMaxPenetration) {
-                            spdlog::info("BallisticController: Penetration {:.1f} > max {:.1f}, forcing immediate correction",
-                                         penetration, Config::options.exitCorrectionMaxPenetration);
-                            forceImmediate = true;
-                        }
+                    if (penetration > Config::options.exitCorrectionMaxPenetration) {
+                        spdlog::info("BallisticController: Penetration {:.1f} > max {:.1f}, forcing correction",
+                                     penetration, Config::options.exitCorrectionMaxPenetration);
+                        shouldCorrect = true;
                     }
                 }
             }
+        }
 
-            if (forceImmediate || elapsed >= static_cast<long long>(Config::options.exitCorrectionDelayMs)) {
-                // Delay elapsed or penetration too deep - apply correction
-                spdlog::info("BallisticController: Starting exit correction ({}), launchSpeed: {:.1f}",
-                             forceImmediate ? "penetration limit" : "delay elapsed",
-                             std::sqrt(m_launchVelocity.x * m_launchVelocity.x + m_launchVelocity.y * m_launchVelocity.y + m_launchVelocity.z * m_launchVelocity.z));
-                ClimbExitCorrector::GetSingleton()->StartCorrection(m_launchVelocity);
-                m_needsExitCorrection = false;
-                m_exitCorrectionPending = false;
-            }
-            // Otherwise: still in delay window, let physics run naturally
+        if (shouldCorrect) {
+            spdlog::info("BallisticController: Starting exit correction, speed: {:.1f}, falling: {}", currentSpeed, isFalling);
+            ClimbExitCorrector::GetSingleton()->StartCorrection(m_launchVelocity);
+            m_needsExitCorrection = false;
         }
     }
 
@@ -362,9 +338,8 @@ bool BallisticController::Update(float deltaTime)
         m_hadFlight = true;
 
         // Note: Exit correction now runs mid-flight when speed drops below threshold
-        // If it hasn't run yet (very fast landing), clear the flags anyway
+        // If it hasn't run yet (very fast landing), clear the flag anyway
         m_needsExitCorrection = false;
-        m_exitCorrectionPending = false;
 
         // Notify CriticalStrikeManager AFTER state is fully reset
         CriticalStrikeManager::GetSingleton()->OnLaunchEnd();
@@ -405,7 +380,6 @@ bool BallisticController::Update(float deltaTime)
             m_inFlight = false;
             m_flightEndTime = std::chrono::steady_clock::now();
             m_hadFlight = true;
-            m_exitCorrectionPending = false;
 
             // Notify CriticalStrikeManager AFTER state is reset
             CriticalStrikeManager::GetSingleton()->OnLaunchEnd();
@@ -485,7 +459,6 @@ void BallisticController::Abort()
     m_inFlight = false;
     m_flightEndTime = std::chrono::steady_clock::now();
     m_hadFlight = true;
-    m_exitCorrectionPending = false;
 
     // Notify CriticalStrikeManager AFTER state is reset
     CriticalStrikeManager::GetSingleton()->OnLaunchEnd();

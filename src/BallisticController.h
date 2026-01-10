@@ -58,11 +58,8 @@ public:
     // Request position correction on landing (called by ClimbManager on climb exit)
     void RequestExitCorrection() { m_needsExitCorrection = true; }
 
-    // Cancel pending exit correction (when player re-grabs during delay window)
-    void CancelPendingExitCorrection() {
-        m_exitCorrectionPending = false;
-        m_needsExitCorrection = false;
-    }
+    // Cancel exit correction request (when player re-grabs)
+    void CancelExitCorrection() { m_needsExitCorrection = false; }
 
     // Configuration
     static constexpr float GROUND_CHECK_DISTANCE = 10.0f;  // Raycast distance for ground detection (fallback)
@@ -96,8 +93,6 @@ private:
     // State
     bool m_inFlight = false;
     bool m_needsExitCorrection = false;  // True if ClimbExitCorrector should run on landing
-    bool m_exitCorrectionPending = false;  // True during delay window before correction
-    std::chrono::steady_clock::time_point m_exitCorrectionRequestTime;  // When pending timer started
     AutoCatchHand m_autoCatchResult = AutoCatchHand::kNone;
     RE::NiPoint3 m_velocity{0.0f, 0.0f, 0.0f};  // Cached velocity (read from controller each frame)
     RE::NiPoint3 m_launchVelocity{0.0f, 0.0f, 0.0f};  // Original launch velocity (for exit correction)

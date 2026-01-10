@@ -11,6 +11,23 @@
 #include "AudioManager.h"
 #include "Config.h"
 #include <algorithm>
+
+#if defined(_WIN32)
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <Windows.h>
+#ifdef max
+#undef max
+#endif
+#ifdef min
+#undef min
+#endif
+#endif
+
 #include "util/VRNodes.h"
 #include "util/Raycast.h"
 #include <spdlog/spdlog.h>
@@ -32,6 +49,129 @@ static bool IsSolidWorldLayer(RE::COL_LAYER layer)
         default:
             return false;
     }
+}
+
+// Fire a short haptic pulse when a hand successfully latches onto a surface.
+// Uses SkyrimVR's internal BSVRInterface::TriggerHapticPulse via the g_openVR pointer,
+// avoiding any dependency on linking openvr_api.lib.
+// Reference implementation pattern: ImmersiveVRActions.cpp (LP_CallTriggerHapticPulse).
+
+// SkyrimVR.exe global: BSOpenVR* g_openVR
+// Offset sourced from SKSEVR GameVR.cpp
+static REL::Relocation<void**> g_openVR{ REL::Offset(0x02FEB9B0) };
+
+// Cached pointer - looked up once, reused thereafter
+static void* s_cachedOpenVR = nullptr;
+static bool s_openVRLookupDone = false;
+
+static bool IsReadableAddress(const void* a_ptr, std::size_t a_bytes = sizeof(void*))
+{
+#if defined(_WIN32)
+    if (!a_ptr) {
+        return false;
+    }
+
+    MEMORY_BASIC_INFORMATION mbi{};
+    if (::VirtualQuery(a_ptr, &mbi, sizeof(mbi)) == 0) {
+        return false;
+    }
+    if (mbi.State != MEM_COMMIT) {
+        return false;
+    }
+
+    const DWORD protect = mbi.Protect & 0xFF;
+    switch (protect) {
+        case PAGE_READONLY:
+        case PAGE_READWRITE:
+        case PAGE_WRITECOPY:
+        case PAGE_EXECUTE_READ:
+        case PAGE_EXECUTE_READWRITE:
+        case PAGE_EXECUTE_WRITECOPY:
+            break;
+        default:
+            return false;
+    }
+
+    if ((mbi.Protect & PAGE_GUARD) != 0) {
+        return false;
+    }
+
+    const auto start = reinterpret_cast<std::uintptr_t>(a_ptr);
+    const auto end = start + a_bytes;
+    const auto regionStart = reinterpret_cast<std::uintptr_t>(mbi.BaseAddress);
+    const auto regionEnd = regionStart + mbi.RegionSize;
+    return end <= regionEnd;
+#else
+    (void)a_ptr;
+    (void)a_bytes;
+    return false;
+#endif
+}
+
+static void* GetOpenVRInterface()
+{
+    // Return cached pointer if already looked up
+    if (s_openVRLookupDone) {
+        return s_cachedOpenVR;
+    }
+    s_openVRLookupDone = true;
+
+#if defined(_WIN32)
+    void** ppOpenVR = g_openVR.get();
+    if (!IsReadableAddress(ppOpenVR)) {
+        spdlog::warn("Haptics: g_openVR address not readable");
+        return nullptr;
+    }
+
+    void* openVR = *ppOpenVR;
+    if (!IsReadableAddress(openVR)) {
+        spdlog::warn("Haptics: BSOpenVR instance not readable");
+        return nullptr;
+    }
+
+    s_cachedOpenVR = openVR;
+    return openVR;
+#else
+    return nullptr;
+#endif
+}
+
+static void CallTriggerHapticPulse(void* a_openVR, int a_hand, float a_durationUnits)
+{
+    if (!a_openVR) {
+        return;
+    }
+
+    // Get vtable pointer and validate it's readable
+    void** vtblPtr = *reinterpret_cast<void***>(a_openVR);
+    if (!IsReadableAddress(vtblPtr, sizeof(void*) * 15)) {
+        spdlog::warn("Haptics: vtable not readable");
+        return;
+    }
+
+    // BSVRInterface vtbl index for TriggerHapticPulse is 14 (see SKSEVR GameVR.h).
+    constexpr std::size_t kVtblIndex_TriggerHapticPulse = 14;
+    using Fn = void (*)(void*, int, float);
+    auto fn = reinterpret_cast<Fn>(vtblPtr[kVtblIndex_TriggerHapticPulse]);
+    if (!fn) {
+        return;
+    }
+
+    fn(a_openVR, a_hand, a_durationUnits);
+}
+
+static void TriggerLatchHaptic(bool isLeft)
+{
+    void* openVR = GetOpenVRInterface();
+    if (!openVR) {
+        return;
+    }
+
+    // Hand enum in SKSEVR: Left=0, Right=1
+    constexpr int kLeftHand = 0;
+    constexpr int kRightHand = 1;
+
+    CallTriggerHapticPulse(openVR, isLeft ? kLeftHand : kRightHand, Config::options.latchHapticDuration);
 }
 
 ClimbManager* ClimbManager::GetSingleton()
@@ -252,6 +392,7 @@ bool ClimbManager::OnGripReleased(bool isLeft)
 void ClimbManager::StartClimb(bool isLeft)
 {
     bool wasClimbing = m_leftGrabbing || m_rightGrabbing;
+    bool alreadyThisHandGrabbing = isLeft ? m_leftGrabbing : m_rightGrabbing;
 
     // If we're currently in ballistic flight, abort it - player is grabbing mid-air
     auto* ballistic = BallisticController::GetSingleton();
@@ -260,8 +401,8 @@ void ClimbManager::StartClimb(bool isLeft)
         ballistic->Abort();
     }
 
-    // Cancel any pending exit correction (hand-swap grace period)
-    ballistic->CancelPendingExitCorrection();
+    // Cancel exit correction if player re-grabs
+    ballistic->CancelExitCorrection();
 
     // End slow-mo and cancel any position correction when player starts climbing
     CriticalStrikeManager::GetSingleton()->OnClimbStart();
@@ -282,6 +423,11 @@ void ClimbManager::StartClimb(bool isLeft)
 
     // Play grip sound whenever a hand grabs a surface (both initial grab and subsequent grabs)
     AudioManager::GetSingleton()->PlayGripSound(IsPlayerInBeastForm());
+
+    // Haptic feedback when hand latches (only when this hand transitions to grabbing)
+    if (!alreadyThisHandGrabbing && Config::options.latchHapticsEnabled) {
+        TriggerLatchHaptic(isLeft);
+    }
 
     RE::NiPoint3 handPos = GetHandWorldPosition(isLeft);
 

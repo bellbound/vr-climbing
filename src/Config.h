@@ -7,6 +7,8 @@ namespace Config {
     struct Options {
         // ===== Climbing (basic on/off and physics) =====
         bool climbingEnabled = true;                 // Enable climbing for player (beast forms always can)
+        bool latchHapticsEnabled = true;             // Haptic pulse on successful latch
+        float latchHapticDuration = 18.0f;           // Haptic pulse duration (SkyrimVR internal units)
         float minLaunchSpeed = 5.0f;                 // Minimum speed to trigger launch (units/s)
         float horizontalLaunchBoost = 1.0f;          // Extra multiplier for horizontal movement
         float velocityHistoryTime = 0.1f;            // Seconds of velocity samples to keep
@@ -73,7 +75,6 @@ namespace Config {
         float launchExitCorrectionSpeedThreshold = 150.0f; // Speed below which exit correction triggers
 
         // ===== Exit Correction (smooth position adjustment after launch) =====
-        float exitCorrectionDelayMs = 200.0f;        // Delay before applying correction (ms) - grace period for hand swaps
         float exitCorrectionMaxPenetration = 60.0f;  // Max units below ground before forcing immediate correction
         float exitCorrectionSecondsPerUnit = 0.003f; // Duration per unit of distance (seconds/unit)
         float exitCorrectionControlPointScale = 0.4f;// How much velocity influences curve shape
