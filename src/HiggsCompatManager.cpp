@@ -84,8 +84,11 @@ void HiggsCompatManager::DisableGravityGloves()
         }
     }
 
-    // Disable grip (if not already disabled by user)
-    if (!m_gripDisabledByUs && m_originalEnableGrip != 0.0) {
+    // Disable grip (if not already disabled by user and nothing is held)
+    // If either hand is holding something with HIGGS, leave grip enabled
+    bool leftHolding = g_higgsInterface->IsHoldingObject(true);
+    bool rightHolding = g_higgsInterface->IsHoldingObject(false);
+    if (!m_gripDisabledByUs && m_originalEnableGrip != 0.0 && !leftHolding && !rightHolding) {
         if (g_higgsInterface->SetSettingDouble("EnableGrip", 0.0)) {
             m_gripDisabledByUs = true;
         }
