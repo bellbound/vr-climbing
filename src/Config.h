@@ -71,6 +71,10 @@ namespace Config {
         float postLandDuration = 1.2f;               // Extra slow-mo time after landing (seconds)
         float postHitDuration = 1.5f;                // Extra slow-mo time after hitting target (seconds)
 
+        //Aelove's tweaks
+        float minStamina = 75.0f;
+        bool enableFallDamage = true;
+
         // ===== Launching (ballistic flight after releasing grip) =====
         float launchExitCorrectionSpeedThreshold = 150.0f; // Speed below which exit correction triggers
 
@@ -84,7 +88,7 @@ namespace Config {
         float soundVolume = 0.5f;                    // Sound volume (0-1), scaled by game master volume
 
         // ===== Debug / Development =====
-        bool hotReloadEnabled = true;                // Hot reload INI when modified (disable for release)
+        bool hotReloadEnabled = false;                // Hot reload INI when modified (disable for release)
     };
 
     extern Options options;
