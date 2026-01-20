@@ -403,7 +403,7 @@ baseStaminaCostBeast=4.0
         // Aelove Tweaks
         RegisterFloat("AeloveTweaks", "minStamina", options.minStamina);
         RegisterBool("AeloveTweaks", "regularPhysicsOnFall", options.regularPhysicsOnFall);
-        RegisterBool("AeloveTweaks", "regularPhysicsOnFallBeast", options.regularPhysicsOnFall);
+        RegisterBool("AeloveTweaks", "regularPhysicsOnFallBeast", options.regularPhysicsOnFallBeast);
         RegisterFloat("AeloveTweaks", "baseStaminaCostBeast", options.baseStaminaCostBeast);
 
         g_registrationComplete = true;
@@ -497,3 +497,4 @@ baseStaminaCostBeast=4.0
         return false;
     }
 }
+
