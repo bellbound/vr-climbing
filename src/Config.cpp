@@ -64,7 +64,7 @@ baseLaunchSpeed=600.0
 ; Max velocity multiplier applied to launches
 maxLaunchMultiplier=1.25
 ; Base stamina drain per second while climbing (set to 0 to disable stamina drain)
-baseStaminaCost=1.0
+baseStaminaCost=8.0
 ; Ray length for detecting climbable surfaces (game units)
 grabRayLength=6.75
 
@@ -171,10 +171,15 @@ hotReloadEnabled=0
 
 [AeloveTweaks]
 ; Sets a minimum amount of Stamina required to be able to climb
-; Set to 0 to disable.
+; Set to 0 to disable
 minStamina=75
-; Enables fall damage while climbing and launching yourself
-enableFallDamage=true
+; Use the regular Havok physics when falling after climbing in human form
+; If true, you can no longer launch yourself and you suffer from fall damage normally
+regularPhysicsOnFall=true
+; Use the regular Havok physics when falling after climbing in werewolf or vampire lord form
+regularPhysicsOnFallBeast=false
+; Base stamina drain per second while climbing in beast form (set to 0 to disable)
+baseStaminaCostBeast=4.0
 )";
 
     // ===== Low-level INI readers using Windows API =====
@@ -386,7 +391,9 @@ enableFallDamage=true
 
         // Aelove Tweaks
         RegisterFloat("AeloveTweaks", "minStamina", options.minStamina);
-        RegisterBool("AeloveTweaks", "enableFallDamage", options.enableFallDamage);
+        RegisterBool("AeloveTweaks", "regularPhysicsOnFall", options.regularPhysicsOnFall);
+        RegisterBool("AeloveTweaks", "regularPhysicsOnFallBeast", options.regularPhysicsOnFall);
+        RegisterFloat("AeloveTweaks", "baseStaminaCostBeast", options.baseStaminaCostBeast);
 
         g_registrationComplete = true;
 
@@ -479,4 +486,3 @@ enableFallDamage=true
         return false;
     }
 }
-
