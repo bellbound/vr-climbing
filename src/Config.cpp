@@ -18,51 +18,18 @@ namespace Config {
     static constexpr const char* DEFAULT_INI_CONTENT = R"(; VRClimbing Configuration
 ; Delete this file to regenerate with defaults
 
-[Climbing]
-; Enable climbing for player (1=enabled, 0=disabled). Beast forms can always climb.
-enabled=1
-; Enable haptic pulse when a hand successfully latches onto a surface (1=enabled, 0=disabled)
-latchHapticsEnabled=1
-; Haptic pulse duration/intensity (SkyrimVR internal units)
-latchHapticDuration=14.4
-; Minimum speed to trigger launch when releasing grip (units/sec)
-minLaunchSpeed=5.0
-; Extra multiplier for horizontal (X/Y) movement (1.0 = same as vertical)
-horizontalLaunchBoost=1.0
-; Seconds of velocity samples to keep for launch calculation
-velocityHistoryTime=0.1
-; Maximum number of velocity samples to track
-maxVelocitySamples=10
-; Exponent for velocity weighting in launch calculation
-; 1.0 = linear (fast frames have proportional influence)
-; 2.0 = quadratic (fast frames dominate more strongly)
-velocityWeightExponent=1.0
-; Max angle deviation from dominant direction (degrees)
-; Samples outside this cone are rejected as outliers (e.g. wrist rotation)
-; Set to 0 to disable filtering
-launchDirectionFilter=90.0
-; Ghost mode: temporarily disable world collision after launch
-; Duration in seconds (0 = disabled)
-ghostModeDuration=0.15
-; Minimum launch speed to trigger ghost mode (units/sec)
-; Ghost mode only activates if path is clear (ray check)
-ghostModeMinSpeed=200.0
-; Minimum time in air before landing is allowed (seconds)
-; Prevents instant landing when launching from ground contact
-minFlightTime=0.5
-; Maximum velocity to allow landing (units/sec, 0=disabled)
-; Player won't land while moving faster than this
-maxLandingVelocity=200.0
+
 
 [ClimbingAbility]
 ; Variables that affect how easy it is to climb
 ; Base values are for a naked player that is not overencumbered
+; Armor weight is scaled by armor skill - higher skill = less effective weight
 ; Exponential smoothing factor for movement (higher = snappier)
 smoothingSpeed=13.0
 ; Base max launch speed (units/sec)
-baseLaunchSpeed=600.0
+baseLaunchSpeed=450.0
 ; Max velocity multiplier applied to launches
-maxLaunchMultiplier=1.25
+maxLaunchMultiplier=1.15
 ; Base stamina drain per second while climbing (set to 0 to disable stamina drain)
 baseStaminaCost=8.0
 ; Ray length for detecting climbable surfaces (game units)
@@ -70,13 +37,16 @@ grabRayLength=6.75
 
 [ClimbingAbilityPerWornWeight]
 ; When enabled, climbing ability scales with armor weight
+; Armor weight is reduced by armor skill level:
+;   - 0-10 skill: full weight
+;   - 10-100 skill: linear interpolation from full weight to zero weight
 ; We interpolate between max (naked) and min (fully armored) values
 ; 80 weight units is considered "max armor" - anything above is treated as 80
 enabled=1
 ; Min launch speed at max armor weight
 minLaunchSpeed=350.0
 ; Min launch multiplier at max armor weight
-minLaunchMultiplier=0.9
+minLaunchMultiplier=1.15
 ; Max stamina cost per second at max armor weight
 maxStaminaCost=16.0
 
@@ -147,22 +117,63 @@ postLandDuration=1.2
 ; Extra slow-mo time after hitting target (seconds)
 postHitDuration=1.5
 
+[Climbing]
+; Enable climbing for player (1=enabled, 0=disabled). Beast forms can always climb.
+enabled=1
+; Minimum speed to trigger launch when releasing grip (units/sec)
+minLaunchSpeed=5.0
+; Extra multiplier for horizontal (X/Y) movement (1.0 = same as vertical)
+horizontalLaunchBoost=1.0
+; Seconds of velocity samples to keep for launch calculation
+velocityHistoryTime=0.2
+; Maximum number of velocity samples to track
+maxVelocitySamples=10
+; Exponent for velocity weighting in launch calculation
+; 1.0 = linear (fast frames have proportional influence)
+; 2.0 = quadratic (fast frames dominate more strongly)
+velocityWeightExponent=1.0
+; Max angle deviation from dominant direction (degrees)
+; Samples outside this cone are rejected as outliers (e.g. wrist rotation)
+; Set to 0 to disable filtering
+launchDirectionFilter=60.0
+; Duration of ghost mode after launch (seconds, 0=disabled)
+; Ghost mode temporarily disables world collision to prevent getting stuck on
+; Disabled by default because it sometimes causes the player to fly out of bounds
+ghostModeDuration=0.0
+; Minimum launch speed to trigger ghost mode (units/sec)
+ghostModeMinSpeed=50.0
+; Minimum time in air before landing is allowed (seconds)
+; Prevents instant landing when launching from ground contact
+minFlightTime=0.5
+; Maximum velocity to allow landing (units/sec, 0=disabled)
+; Player won't land while moving faster than this
+maxLandingVelocity=50.0
+
 [Launching]
+; Settings for ballistic flight after releasing grip
+; Distance ahead (in velocity direction) to check for clearance before triggering exit correction
 ; Speed threshold below which exit correction triggers (units/sec)
 exitCorrectionSpeedThreshold=150.0
 
 [ExitCorrection]
 ; Smooth position adjustment after launching (prevents clipping through geometry)
+; Delay before applying correction (milliseconds) - grace period for hand swaps
+; If player re-grabs within this window, correction is cancelled
+delayMs=200.0
+; Max units player feet can be below ground before forcing immediate correction
+; During delay, physics runs naturally but if penetration exceeds this, correction triggers early
+; Set to 0 to disable penetration check (not recommended)
+maxPenetration=90.0
 ; Duration per unit of linear distance (seconds per game unit)
-secondsPerUnit=0.003
+secondsPerUnit=0.004
 ; How much initial velocity influences the curve shape (0-1)
-controlPointScale=0.4
+controlPointScale=0.25
 
 [Sound]
 ; Enable climbing and launch sounds (1=enabled, 0=disabled)
 enabled=1
 ; Sound volume (0.0-1.0) - multiplied by game's master volume
-volume=0.5
+volume=0.9
 
 [Debug]
 ; Hot reload INI when file is modified (1=enabled, 0=disabled)
