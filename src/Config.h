@@ -24,7 +24,7 @@ namespace Config {
         float smoothingSpeed = 13.0f;                // Exponential smoothing factor for movement
         float baseLaunchSpeed = 600.0f;              // Base max launch speed (units/s)
         float maxLaunchMultiplier = 1.25f;           // Max velocity multiplier for launches
-        float baseStaminaCost = 1.0f;                // Base stamina drain per second
+        float baseStaminaCost = 8.0f;                // Base stamina drain per second
         float grabRayLength = 6.75f;                 // Ray length for surface detection (game units)
 
         // ===== Climbing Ability Per Worn Weight =====
@@ -73,7 +73,10 @@ namespace Config {
 
         //Aelove's tweaks
         float minStamina = 75.0f;
-        bool enableFallDamage = true;
+        bool regularPhysicsOnFall = true;
+        bool regularPhysicsOnFallBeast = false;
+        float baseStaminaCostBeast = 4.0f;
+
 
         // ===== Launching (ballistic flight after releasing grip) =====
         float launchExitCorrectionSpeedThreshold = 150.0f; // Speed below which exit correction triggers
