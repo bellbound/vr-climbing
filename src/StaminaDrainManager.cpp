@@ -95,7 +95,12 @@ bool StaminaDrainManager::CanStartClimbing() const
     }
 
     // Just need stamina > 0 to start climbing
-    return GetCurrentStamina() > 0.0f;
+    float minStamina = Config::options.minStamina;
+    if (minStamina < 0.0f) {
+        minStamina = 0.0f;
+    }
+    
+    return GetCurrentStamina() > minStamina;
 }
 
 void StaminaDrainManager::OnClimbingStopped()
@@ -145,3 +150,4 @@ float StaminaDrainManager::GetMaxStamina() const
 
     return player->AsActorValueOwner()->GetPermanentActorValue(RE::ActorValue::kStamina);
 }
+
