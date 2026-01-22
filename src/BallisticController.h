@@ -94,10 +94,11 @@ private:
     bool m_inFlight = false;
     bool m_needsExitCorrection = false;  // True if ClimbExitCorrector should run on landing
     AutoCatchHand m_autoCatchResult = AutoCatchHand::kNone;
-    RE::NiPoint3 m_velocity{0.0f, 0.0f, 0.0f};  // Cached velocity (read from controller each frame)
-    RE::NiPoint3 m_launchVelocity{0.0f, 0.0f, 0.0f};  // Original launch velocity (for exit correction)
+    RE::NiPoint3 m_velocity{ 0.0f, 0.0f, 0.0f };  // Cached velocity (read from controller each frame)
+    RE::NiPoint3 m_launchVelocity{ 0.0f, 0.0f, 0.0f };  // Original launch velocity (for exit correction)
     float m_flightTime = 0.0f;  // Time since launch
     float m_gravity = 0.0f;     // Gravity to apply as delta (units/s²)
+    bool regularPhysics = false; //AELOVE : Check if we're using the regular Havok physics or the mod's version
 
     // Track when flight ended for post-flight autocatch window
     std::chrono::steady_clock::time_point m_flightEndTime;

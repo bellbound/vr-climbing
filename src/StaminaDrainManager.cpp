@@ -14,14 +14,14 @@ float StaminaDrainManager::CalculateStaminaCostPerSecond() const
 {
     auto* equipMgr = EquipmentManager::GetSingleton();
 
-    // Beast forms have no stamina drain
-    if (equipMgr->IsInBeastForm()) {
-        return 0.0f;
-    }
-
     // God mode = no drain
     if (RE::PlayerCharacter::IsGodMode()) {
         return 0.0f;
+    }
+
+    // Beast forms have no stamina drain (AELOVE: NOW THEY DO)
+    if (equipMgr->IsInBeastForm()) {
+        return Config::options.baseStaminaCostBeast;
     }
 
     // Overencumbered takes priority (if enabled)
@@ -51,6 +51,10 @@ float StaminaDrainManager::CalculateStaminaCostPerSecond() const
 bool StaminaDrainManager::UpdateClimbingDrain(float deltaTime)
 {
     float staminaCost = CalculateStaminaCostPerSecond();
+    float minStamina = Config::options.minStamina;
+    if (minStamina < 0.0f) {
+        minStamina = 0.0f;
+    }
 
     // If stamina cost is 0, no drain needed
     if (staminaCost <= 0.0f) {
@@ -70,7 +74,7 @@ bool StaminaDrainManager::UpdateClimbingDrain(float deltaTime)
     DrainStamina(drainAmount);
 
     // Check if out of stamina
-    if (GetCurrentStamina() <= 0.0f) {
+    if (GetCurrentStamina() <= minStamina) {
         spdlog::info("StaminaDrainManager: Out of stamina - dropping!");
         return false;  // Force release
     }
@@ -91,7 +95,12 @@ bool StaminaDrainManager::CanStartClimbing() const
     }
 
     // Just need stamina > 0 to start climbing
-    return GetCurrentStamina() > 0.0f;
+    float minStamina = Config::options.minStamina;
+    if (minStamina < 0.0f) {
+        minStamina = 0.0f;
+    }
+
+    return GetCurrentStamina() > minStamina;
 }
 
 void StaminaDrainManager::OnClimbingStopped()
