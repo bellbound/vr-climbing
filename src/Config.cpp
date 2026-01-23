@@ -18,7 +18,41 @@ namespace Config {
     static constexpr const char* DEFAULT_INI_CONTENT = R"(; VRClimbing Configuration
 ; Delete this file to regenerate with defaults
 
-
+[Climbing]
+; Enable climbing for player (1=enabled, 0=disabled). Beast forms can always climb.
+enabled=1
+; Enable haptic pulse when a hand successfully latches onto a surface (1=enabled, 0=disabled)
+latchHapticsEnabled=1
+; Haptic pulse duration/intensity (SkyrimVR internal units)
+latchHapticDuration=14.4
+; Minimum speed to trigger launch when releasing grip (units/sec)
+minLaunchSpeed=5.0
+; Extra multiplier for horizontal (X/Y) movement (1.0 = same as vertical)
+horizontalLaunchBoost=1.0
+; Seconds of velocity samples to keep for launch calculation
+velocityHistoryTime=0.2
+; Maximum number of velocity samples to track
+maxVelocitySamples=10
+; Exponent for velocity weighting in launch calculation
+; 1.0 = linear (fast frames have proportional influence)
+; 2.0 = quadratic (fast frames dominate more strongly)
+velocityWeightExponent=1.0
+; Max angle deviation from dominant direction (degrees)
+; Samples outside this cone are rejected as outliers (e.g. wrist rotation)
+; Set to 0 to disable filtering
+launchDirectionFilter=60.0
+; Duration of ghost mode after launch (seconds, 0=disabled)
+; Ghost mode temporarily disables world collision to prevent getting stuck on
+; Disabled by default because it sometimes causes the player to fly out of bounds
+ghostModeDuration=0.0
+; Minimum launch speed to trigger ghost mode (units/sec)
+ghostModeMinSpeed=50.0
+; Minimum time in air before landing is allowed (seconds)
+; Prevents instant landing when launching from ground contact
+minFlightTime=0.5
+; Maximum velocity to allow landing (units/sec, 0=disabled)
+; Player won't land while moving faster than this
+maxLandingVelocity=50.0
 
 [ClimbingAbility]
 ; Variables that affect how easy it is to climb
@@ -31,7 +65,7 @@ baseLaunchSpeed=450.0
 ; Max velocity multiplier applied to launches
 maxLaunchMultiplier=1.15
 ; Base stamina drain per second while climbing (set to 0 to disable stamina drain)
-baseStaminaCost=8.0
+baseStaminaCost=1.0
 ; Ray length for detecting climbable surfaces (game units)
 grabRayLength=6.75
 
@@ -99,7 +133,6 @@ hmdAlignmentAngle=140.0
 hostilesOnly=0
 ; End slow-mo immediately when landing (unless target was hit) (1=enabled, 0=disabled)
 endOnLand=1
-
 ; World time multiplier during slow-mo (0.15 = 15% speed)
 worldSlowdown=0.15
 ; Player time multiplier during slow-mo
@@ -117,41 +150,8 @@ postLandDuration=1.2
 ; Extra slow-mo time after hitting target (seconds)
 postHitDuration=1.5
 
-[Climbing]
-; Enable climbing for player (1=enabled, 0=disabled). Beast forms can always climb.
-enabled=1
-; Minimum speed to trigger launch when releasing grip (units/sec)
-minLaunchSpeed=5.0
-; Extra multiplier for horizontal (X/Y) movement (1.0 = same as vertical)
-horizontalLaunchBoost=1.0
-; Seconds of velocity samples to keep for launch calculation
-velocityHistoryTime=0.2
-; Maximum number of velocity samples to track
-maxVelocitySamples=10
-; Exponent for velocity weighting in launch calculation
-; 1.0 = linear (fast frames have proportional influence)
-; 2.0 = quadratic (fast frames dominate more strongly)
-velocityWeightExponent=1.0
-; Max angle deviation from dominant direction (degrees)
-; Samples outside this cone are rejected as outliers (e.g. wrist rotation)
-; Set to 0 to disable filtering
-launchDirectionFilter=60.0
-; Duration of ghost mode after launch (seconds, 0=disabled)
-; Ghost mode temporarily disables world collision to prevent getting stuck on
-; Disabled by default because it sometimes causes the player to fly out of bounds
-ghostModeDuration=0.0
-; Minimum launch speed to trigger ghost mode (units/sec)
-ghostModeMinSpeed=50.0
-; Minimum time in air before landing is allowed (seconds)
-; Prevents instant landing when launching from ground contact
-minFlightTime=0.5
-; Maximum velocity to allow landing (units/sec, 0=disabled)
-; Player won't land while moving faster than this
-maxLandingVelocity=50.0
-
 [Launching]
 ; Settings for ballistic flight after releasing grip
-; Distance ahead (in velocity direction) to check for clearance before triggering exit correction
 ; Speed threshold below which exit correction triggers (units/sec)
 exitCorrectionSpeedThreshold=150.0
 
@@ -178,18 +178,19 @@ volume=0.9
 [Debug]
 ; Hot reload INI when file is modified (1=enabled, 0=disabled)
 ; Disable this for release builds to avoid file system checks every frame
-hotReloadEnabled=0
+hotReloadEnabled=1
 
 [AeloveTweaks]
+; These options are from AeloveRim's fork - all disabled by default
 ; Sets a minimum amount of Stamina required to be able to climb (set to 0 to disable)
-minStamina=75
+minStamina=0
 ; Use the regular Havok physics when falling after climbing in human form (set to 1 to enable)
 ; If enabled, you can no longer launch yourself and you suffer from fall damage normally
-regularPhysicsOnFall=1
+regularPhysicsOnFall=0
 ; Use the regular Havok physics when falling after climbing in werewolf or vampire lord form (set to 1 to enable)
 regularPhysicsOnFallBeast=0
 ; Base stamina drain per second while climbing in beast form (set to 0 to disable)
-baseStaminaCostBeast=4.0
+baseStaminaCostBeast=0
 )";
 
     // ===== Low-level INI readers using Windows API =====
