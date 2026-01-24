@@ -1,0 +1,43 @@
+# Auto detect text files and normalize line endings to CRLF
+* text=auto eol=crlf
+
+# C++ source files
+*.cpp text eol=crlf
+*.h text eol=crlf
+*.hpp text eol=crlf
+*.c text eol=crlf
+*.inl text eol=crlf
+
+# Build files
+*.cmake text eol=crlf
+CMakeLists.txt text eol=crlf
+*.json text eol=crlf
+*.yaml text eol=crlf
+*.yml text eol=crlf
+
+# Scripts
+*.ps1 text eol=crlf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.sh text eol=lf
+*.py text eol=crlf
+
+# Web/markup
+*.svg text eol=crlf
+*.xml text eol=crlf
+*.md text eol=crlf
+
+# Binary files - don't touch
+*.dll binary
+*.pdb binary
+*.lib binary
+*.exe binary
+*.dds binary
+*.png binary
+*.jpg binary
+*.gif binary
+*.ico binary
+*.bsa binary
+*.esp binary
+*.esm binary
+*.esl binary
